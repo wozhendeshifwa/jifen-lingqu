@@ -71,6 +71,28 @@ Trae 的登录凭证（JWT）**约 13 天过期，且只有 Trae CN 桌面客户
 4. **回环请求要绕开代理**，且不要用 `-ComputerName` 做端口探测（实测极慢）。
 5. **本机没有系统级 Node，git 也不在 PATH。** 所以包装脚本按 DSH 运行时 → WorkBuddy 运行时 → PATH 的顺序自动找 Node，可用 `TRAE_CHECKIN_NODE` 覆盖。
 
+## 维护陷阱：git 的 DNS 钉住
+
+本仓库的 `.git/config` 里有一条：
+
+```
+[http]
+	curloptResolve = github.com:443:140.82.116.3
+```
+
+**这是必需的，不是手滑。** 这台机器上 `github.com` 的 DNS 解析（`20.205.243.166`）实测**连不通**，不加钉住时 `git push` 会报 `unable to connect to server` / `Recv failure: Connection was reset`。
+
+**但它会失效**——这个 IP 哪天不通了，push 就会突然失败。届时这样换一个：
+
+```powershell
+# 1) 找当前能用的 IP（挑 http=200 且 exit=0 的那个）
+foreach ($ip in @('140.82.116.3','140.82.113.3','20.205.243.166')) {
+  curl.exe -s -o NUL -w "$ip -> %{http_code}`n" --max-time 6 --resolve "github.com:443:$ip" https://github.com/
+}
+# 2) 换上
+git config http.curloptResolve github.com:443:<能用的IP>
+```
+
 ## 风险与边界
 
 - Trae 签到接口是**社区逆向**得到的，不是官方 API，随时可能变更。脚本以「响亮失败」为原则：区分退出码，不静默吞错。
