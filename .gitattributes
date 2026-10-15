@@ -1,0 +1,16 @@
+# 行尾与编码约定
+#
+# 背景：本机 git 的 core.autocrlf 是 true（系统级配置），默认会在 checkout 时
+# 把 LF 转成 CRLF。对 .ps1 来说这不只是风格问题——checkout 时的行尾转换可能
+# 破坏文件开头的 UTF-8 BOM，而本机只有 Windows PowerShell 5.1，它按 ANSI/GBK
+# 解码无 BOM 的 .ps1，中文会变乱码并直接把语法搞崩。所以必须显式钉住。
+
+# 一律以 LF 入库，也以 LF 检出，不做平台转换
+* text=auto eol=lf
+
+# 明确二进制，避免被当文本改写
+*.png binary
+*.jpg binary
+*.ico binary
+*.db binary
+*.vscdb binary
